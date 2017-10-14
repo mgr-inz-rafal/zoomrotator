@@ -19,13 +19,16 @@
 
     <p id="progress">Progress: 0%</p>
     <p id="avgTime" style="visibility: hidden"></p>
+    <p>Refresh page for random picture.</p>
 
     <script>
     var imageWidth = 320;
     var imageHeight = 200;
-    var totalFrames = 79;
+    var totalFrames = 51;
     var frames = [];
     var times = [];
+	
+	var images = ["antos.png", "doom.png", "gieroje.png", "invader.png", "kosmos.png", "mandelbrot.png", "sasza.png", "zombi.png"];
 
     init();
 
@@ -152,7 +155,7 @@
         sourceContext.drawImage(img, 0, 0);
         window.intervalId = setInterval(rotate, 1);
     };
-    img.src = "img/antos.png";
+    img.src = "img/" + images[Math.floor(Math.random() * images.length)];
     </script>
 </body>
 </html>
