@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Zoom Rotator by mgr inż. Rafał</title>
+</head>
+<body>
+    <br>
+    <p>Source</p>
+    <canvas id="source" style="border: 2px solid #00FF00;">
+        <p>Sorry, your browser doesn’t currently support HTML5 Canvas.</p>
+    </canvas>
+
+    <br>
+    <p>Target</p>
+    <canvas id="target" style="border: 2px solid #FF0000; visibility: hidden">
+        <p>Sorry, your browser doesn’t currently support HTML5 Canvas.</p>
+    </canvas>
+
+    <p id="progress">Progress: 0%</p>
+    <p id="avgTime" style="visibility: hidden"></p>
+
+    <script>
+    var imageWidth = 320;
+    var imageHeight = 200;
+    var totalFrames = 79;
+    var frames = [];
+    var times = [];
+
+    init();
+
+    function init() {
+        window.angle = 0;
+        window.rotations = 0;
+        window.currentFrame = 0;
+        initCanvases();
+        initZooms();
+    }
+
+    function initCanvases() {
+        document.getElementById("source").setAttribute("width", imageWidth);
+        document.getElementById("target").setAttribute("width", imageWidth);
+        document.getElementById("source").setAttribute("height", imageHeight);
+        document.getElementById("target").setAttribute("height", imageHeight);
+        window.sourceContext = document.getElementById('source').getContext('2d');
+        window.targetContext = document.getElementById('target').getContext('2d');
+    }
+
+    function putPixel(x, y, p) {
+        targetContext.putImageData(p, x, y);
+    }
+
+    function getPixel(x, y) {
+        return sourceContext.getImageData((x + 320 * 10) % 320, (y + 200 * 10) % 200, 1, 1);
+    }
+
+    function initZooms() {
+        var zoomInitial = 1.3;
+        var zoomTarget = 0.4;
+        window.zooms = [];
+
+        for (var i = 0; i < totalFrames; ++i) {
+            window.zooms[i] = ((zoomInitial * (Math.sin(-(Math.PI / 2) + Math.PI * 2 / totalFrames * i) + 1)) * (zoomInitial - zoomTarget) / (zoomInitial << 1)) + zoomTarget;
+        }
+    }
+
+    function cloneCanvas(oldCanvas) {
+        var newCanvas = document.createElement('canvas');
+        var context = newCanvas.getContext('2d');
+        newCanvas.width = oldCanvas.width;
+        newCanvas.height = oldCanvas.height;
+        context.drawImage(oldCanvas, 0, 0);
+        return newCanvas;
+    }
+
+    function animate() {
+        targetContext.putImageData(frames[window.currentFrame++], 0, 0);
+        if (window.currentFrame>= frames.length) {
+            window.currentFrame = 0;
+        }
+    }
+
+    function getAverageTime() {
+        var sum = 0;
+        for (var i = 0; i < times.length; ++i) {
+            sum += times[i];
+        }
+        return sum / times.length;
+    }
+
+    function setText(element, text) {
+        document.getElementById(element).innerHTML = text;
+    }
+
+    function showProgress() {
+        setText("progress", "Progress: " +
+            (((100 * (currentFrame+ 1)) / totalFrames).toFixed(2)) +
+            "% (" +
+            (currentFrame + 1) +
+            "/" +
+            totalFrames +
+            ")");
+    }
+
+    function displayStats() {
+        setText("avgTime", "Average time per frame: " + getAverageTime().toFixed(2) + "ms");
+        document.getElementById("avgTime").style.visibility = "visible";
+    }
+
+    function rotate() {
+        var start = +new Date();
+        window.angle += (Math.PI * 2) / totalFrames;
+        targetContext.clearRect(0, 0, 320, 200);
+        for (var xx = 0; xx < 320; ++xx) {
+            for (var yy = 0; yy < 200; ++yy) {
+                var newx = zooms[window.currentFrame] *
+                    ((xx - 320 / 2) * Math.cos(window.angle) - (yy - 200 / 2) * Math.sin(window.angle) + 320 / 2);
+                var newy = zooms[window.currentFrame] *
+                    ((xx - 320 / 2) * Math.sin(window.angle) + (yy - 200 / 2) * Math.cos(window.angle) + 200 / 2);
+                putPixel(xx, yy, getPixel(newx, newy));
+            }
+        }
+        var end = +new Date();
+        console.log("Stored frame #" + (window.currentFrame+ 1) + " in " + (end - start) + "ms");
+        times[window.currentFrame] = end - start;
+
+        showProgress();
+
+        frames[window.currentFrame++] = targetContext.getImageData(0, 0, 320, 200);
+        ++window.rotations;
+        if (totalFrames === window.rotations) {
+            // Stop precalculation
+            clearInterval(intervalId);
+
+            // Drop some statistics
+            console.log("I have a total of " + frames.length + " frame(s) created");
+
+            // Display some statistics to the user
+            displayStats();
+
+            // Make target canvas visible
+            document.getElementById("target").style.visibility = "visible";
+
+            // Start animation
+            window.currentFrame= 0;
+            setInterval(animate, 2000 / totalFrames); // 1 revolution per second
+        }
+    }
+
+    var img = new Image();
+    img.onload = function () {
+        sourceContext.drawImage(img, 0, 0);
+        window.intervalId = setInterval(rotate, 1);
+    };
+    img.src = "antos.png";
+    </script>
+</body>
+</html>
+
