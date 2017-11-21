@@ -1,4 +1,4 @@
-# ZoomRotator"
+# ZoomRotator
 
 Simple ZoomRotator in JS.
 
